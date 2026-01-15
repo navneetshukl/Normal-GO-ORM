@@ -1,6 +1,9 @@
 package main
 
-import "ngorm"
+import (
+	"log"
+	"ngorm"
+)
 
 type Table struct {
 	ngorm.Table
@@ -9,7 +12,14 @@ type Table struct {
 }
 
 func main() {
+	dsn := "host=localhost port=5433 user=postgres password=postgres dbname=postgres sslmode=disable"
+
+	d,err:=ngorm.ConnectToDB(dsn)
+	if err!=nil{
+		log.Println("Error ",err)
+		return
+	}
 
 	var t Table
-	ngorm.CreateTables(t)
+	d.CreateTables(t)
 }
