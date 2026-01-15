@@ -25,45 +25,56 @@ func ConnectToDB(connString string) (*DBConn, error) {
 
 // CreateTables function will create the table by give struct
 func CreateTables(table interface{}) error {
-	// get column name and column type
 
-	ty := reflect.TypeOf(table)
-	if ty.Kind() == reflect.Ptr {
-		ty = ty.Elem()
+	t := reflect.TypeOf(table)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
 	}
-	if ty.Kind() != reflect.Struct {
+	if t.Kind() != reflect.Struct {
 		return errors.New("provided type is not struct")
 	}
-
-	tableName := ty.Name()
-	totalFields := ty.NumField()
-	fmt.Println("Table Name is ", tableName)
-	for i := 0; i < totalFields; i++ {
-		field := ty.Field(i)
-		fmt.Println("Field is ", field)
-
-		fieldName := field.Name
-		fieldType := field.Type
-		ormTag := field.Tag.Get("ngorm")
-
-		fmt.Println("Field Name :", fieldName)
-		fmt.Println("Field Type :", fieldType)
-		fmt.Println("ORM Tag    :", ormTag)
+	fmt.Println("Table:", t.Name())
+	fields := flattenStruct(t)
+	for _, f := range fields {
+		fmt.Println("Field:", f.Name, "Type:", f.Type)
 	}
-	return nil
 
+	return nil
 }
 
-func parseEmbeddedStructs(ty reflect.Type, fields []*reflect.StructField) {
-	if ty.Kind() == reflect.Ptr {
-		ty = ty.Elem()
-	}
-	if ty.Kind() == reflect.Struct {
-		parseEmbeddedStructs(ty, fields)
-	}
-	numFields := ty.NumField()
-	for i := 0; i < numFields; i++ {
+// flattenStruct function should flatten the struct and embedded struct
+func flattenStruct(t reflect.Type) []reflect.StructField {
+	fields := []reflect.StructField{}
 
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
 	}
 
+	if t.Kind() != reflect.Struct {
+		return fields
+	}
+
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		ft := f.Type
+
+		if ft.Kind() == reflect.Ptr {
+			ft = ft.Elem()
+		}
+		if shouldFlatten(ft) {
+			allFields := flattenStruct(ft)
+			fields = append(fields, allFields...)
+			continue
+		}
+		fields = append(fields, f)
+	}
+
+	return fields
+}
+
+func shouldFlatten(ft reflect.Type) bool {
+	return ft.Kind() == reflect.Struct &&
+		ft.PkgPath() != "" &&
+		ft.PkgPath() != "time" &&
+		ft.PkgPath() != "database/sql"
 }

@@ -3,7 +3,7 @@ package main
 import "ngorm"
 
 type Table struct {
-	ngorm.Model
+	ngorm.Table
 	Name   string `ngorm:"a,b,c"`
 	Mobile string
 }
@@ -11,6 +11,5 @@ type Table struct {
 func main() {
 
 	var t Table
-
 	ngorm.CreateTables(t)
 }
